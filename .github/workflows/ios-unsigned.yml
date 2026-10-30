@@ -1,0 +1,80 @@
+name: iOS unsigned IPA
+
+# 用途：没有 Mac 也能把 OpenU60 打包成未签名 IPA，再用 Windows 上的
+# Sideloadly / AltStore 以 Apple ID 自签安装到 iPhone。
+#
+# 用法：
+#   1. Fork https://github.com/jesther-ai/open-u60-pro
+#   2. 把本文件放到 fork 的 .github/workflows/ios-unsigned.yml
+#   3. Actions 页手动 Run workflow，或在 mobile/ios 有改动时自动跑
+#   4. 下载 artifact：OpenU60-unsigned-ipa
+#
+# 说明：
+#   - 未签名构建不处理 entitlements，所以 aps-environment（Push）不会阻止构建；
+#     但自签后的 App 也无法使用 Live Activity 的 APNs 推送（功能降级，App 本体正常）。
+#   - 需要 iOS 17+ 设备；部署目标由 mobile/ios/OpenU60/project.yml 决定。
+#   - 若 Sideloadly 对 PlugIns/SignalLiveActivityExtension.appex 报签名错误，
+#     删掉 IPA 里的 Payload/OpenU60.app/PlugIns 目录再签即可（只是没有锁屏实时信号）。
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "mobile/ios/**"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Install XcodeGen
+        run: |
+          brew update >/dev/null 2>&1 || true
+          brew install xcodegen
+          xcodegen --version
+
+      - name: Generate Xcode project
+        working-directory: mobile/ios/OpenU60
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        working-directory: mobile/ios/OpenU60
+        run: |
+          xcodebuild \
+            -project OpenU60.xcodeproj \
+            -scheme OpenU60 \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            build
+
+      - name: Package unsigned IPA
+        working-directory: mobile/ios/OpenU60
+        run: |
+          APP="build/Build/Products/Release-iphoneos/OpenU60.app"
+          test -d "$APP"
+          rm -rf Payload OpenU60-unsigned.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qr OpenU60-unsigned.ipa Payload
+          ls -lh OpenU60-unsigned.ipa
+          echo "bundle: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OpenU60-unsigned-ipa
+          path: mobile/ios/OpenU60/OpenU60-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
