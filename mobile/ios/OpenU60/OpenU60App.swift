@@ -12,7 +12,7 @@ struct OpenU60App: App {
     private let client: AgentClient
 
     init() {
-        let savedIP = UserDefaults.standard.string(forKey: "gateway_ip") ?? "192.168.0.1"
+        let savedIP = UserDefaults.standard.string(forKey: "gateway_ip") ?? "192.168.10.1"
         let agentClient = AgentClient(baseURL: "http://\(savedIP):9090")
         self.client = agentClient
         _signalActivity = State(initialValue: SignalActivityManager(client: agentClient))
