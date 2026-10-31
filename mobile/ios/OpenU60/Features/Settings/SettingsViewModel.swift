@@ -31,7 +31,7 @@ final class SettingsViewModel {
 
     init(client: AgentClient) {
         self.client = client
-        let saved = UserDefaults.standard.string(forKey: "gateway_ip") ?? "192.168.0.1"
+        let saved = UserDefaults.standard.string(forKey: "gateway_ip") ?? "192.168.10.1"
         self.gatewayIP = saved
         self.committedGatewayIP = saved
         let stored = UserDefaults.standard.double(forKey: "poll_interval")
@@ -56,7 +56,7 @@ final class SettingsViewModel {
         defer { isDetectingGateway = false }
 
         let startingIP = committedGatewayIP
-        let candidates = ["192.168.0.1", "192.168.1.1", "192.168.2.1", "10.0.0.1"]
+        let candidates = ["192.168.10.1", "192.168.1.1", "192.168.2.1", "10.0.0.1"]
         for ip in candidates {
             if Task.isCancelled { break }
             client.baseURL = Self.agentURL(for: ip)
