@@ -6,7 +6,7 @@ struct OpenU60App: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var authManager: AuthManager
     @State private var isAttemptingAutoLogin = true
-    @AppStorage("gateway_ip") private var gatewayIP: String = "192.168.0.1"
+    @AppStorage("gateway_ip") private var gatewayIP: String = "192.168.10.1"
     @AppStorage("dark_mode_override") private var darkModeOverride: Int = 0
 
     private let client: AgentClient
